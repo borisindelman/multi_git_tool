@@ -11,6 +11,7 @@ function usage {
     echo "  -s, --status        show a status summary in a table format"
     echo "  -i, --include       list of repos to include."
     echo "  -e, --exclude       list of repo names to exclude."
+    echo "  -f, --file          path to a file that contains repo names to include."
     echo "  -c, --command       set of git commands to run on all detected repos"
     echo
     echo "commands shortcuts and combos:"
@@ -180,12 +181,13 @@ fi
 
 ## parse input arguments
 GIT_COMMANDS=()
-EXCLUDED_REPOS=()
-INCLUDED_REPOS=()
 COMMAND_MODE=false
 STATUS_MODE=false
+EXCLUDED_REPOS=()
 EXCLUDE_MODE=false
+INCLUDED_REPOS=()
 INCLUDE_MODE=false
+FILE_MODE=false
 while [[ $# -gt 0 ]] ; do
     key="$1"
 
@@ -216,6 +218,12 @@ while [[ $# -gt 0 ]] ; do
         -i|--include)
             INCLUDE_MODE=true
             INCLUDED_REPOS+=("$2")
+            shift # past argument
+            shift # past value
+        ;;
+        -f|--file)
+            FILE_MODE=true
+            FILE_PATH=("$2")
             shift # past argument
             shift # past value
         ;;
@@ -257,14 +265,39 @@ fi
 if [ "$PROVIDED_REPO_PATH" != "" ] ; then
     echo -e "\033[1;33mSearching repositories in: $PROVIDED_REPO_PATH\033[0;0m"  
     
+    # make sure flags are used correctly
     if [ "$INCLUDE_MODE" == true ] && [ "$EXCLUDE_MODE" == true ]; then
+        
         echo "Error! supplied both include and exclude flags. Please choose only one of them."
+        exit 1    
+    elif [ "$INCLUDE_MODE" == true ] && [ "$FILE_MODE" == true ]; then
+        
+        echo "Error! supplied both include and file flags. Please choose only one of them."
+        exit 1
+    elif [ "$EXCLUDE_MODE" == true ] && [ "$FILE_MODE" == true ]; then
+        echo "Error! supplied both exclude and file flags. Please choose only one of them."
         exit 1
     fi
+
+    # read from file if -f flag provided
+    if [ "$FILE_MODE" == true ]; then
+        end_of_file=0
+        while [[ $end_of_file == 0 ]]; do
+            read -r line
+            end_of_file=$?
+            line=($(echo "$line" | tr ' ' '\n'))
+            for name in "${line[@]}"; do
+                INCLUDED_REPOS+=("$name")
+            done
+        done < "$FILE_PATH"
+        INCLUDE_MODE=true
+    fi
+
+    # print exclude/include repos
     if [ "$INCLUDE_MODE" == true ]; then
-        echo -e "\033[1;33mIncluding: \033[0;3;33m$INCLUDED_REPOS\033[0;0m"
+        echo -e "\033[1;33mIncluding: \033[0;3;33m${INCLUDED_REPOS[@]}\033[0;0m"
     elif [ "$EXCLUDE_MODE" == true ]; then
-        echo -e "\033[1;33mExcluding: \033[0;3;33m$EXCLUDED_REPOS\033[0;0m"
+        echo -e "\033[1;33mExcluding: \033[0;3;33m${EXCLUDED_REPOS[@]}\033[0;0m"
     fi
 
     ## list all dirs in path
@@ -276,11 +309,11 @@ if [ "$PROVIDED_REPO_PATH" != "" ] ; then
             REPO_NAME=$(echo $DIR | rev | cut -d/ -f1 | rev) 
              
             if [ "$EXCLUDE_MODE" == true ]; then
-                if [[ ! " ${EXCLUDED_REPOS} " == *" ${REPO_NAME} "* ]]; then     
+                if [[ ! " ${EXCLUDED_REPOS[@]} " == *" ${REPO_NAME} "* ]]; then     
                     DIRS+=("$DIR")                
                 fi
             elif [ "$INCLUDE_MODE" == true ]; then
-                if [[ " ${INCLUDED_REPOS} " == *" ${REPO_NAME} "* ]]; then                
+                if [[ " ${INCLUDED_REPOS[@]} " == *" ${REPO_NAME} "* ]]; then                
                     DIRS+=("$DIR")
                 fi
             else

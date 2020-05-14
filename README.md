@@ -10,13 +10,15 @@ The tool operates on all subdierectories of a provided path or from the env vari
 
 
 ## Usage
-```bash
-Usage: multi_git_tool.sh [-p] <path/to/repo> [-s] [-e] <repo_exclude_list> [-c] <command1> <command2> ...
 ```
-* -p|--path   : provide path to repo, else Will use GITREPOPATH variable
-* -e|--exclude: list of repo names to exclude
-* -s|--status : status mode
-* -c|--command: commands mode
+multi_git_tool.sh [-p] <path/to/repo> [-s] [-i] <repo_include_list> [-e] <repo_exclude_list> [-f] <path/to/repo_list.txt> [-c] <command1> <command2> ...
+```
+*  -p, --path          path to repo. if not provided will use GITREPOPATH variable
+*  -s, --status        show a status summary in a table format
+*  -i, --include       list of repos to include.
+*  -e, --exclude       list of repo names to exclude.
+*  -f, --file          path to a file that contains repo names to include.
+*  -c, --command       set of git commands to run on all detected repos
 
 command shortcuts:
 * s = status
@@ -54,4 +56,12 @@ command shortcuts:
 * `git pull` for each repo except repo_b and repo_c
     ```bash
     multi_git_tool -p /path/to/repo -e 'repo_b repo_c' -c pull
+    ```
+* `git pull` for only repos repo_b and repo_c
+    ```bash
+    multi_git_tool -p /path/to/repo -i 'repo_b repo_c' -c pull
+    ```
+* `git pull` for a repo list provided in a file
+    ```bash
+    multi_git_tool -p /path/to/repo -f /path/to/repo_list.txt -c pull
     ```
