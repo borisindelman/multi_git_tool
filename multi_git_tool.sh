@@ -2,17 +2,24 @@
 
 PROGRAMNAME=$0
 
+SCRIPT_PATH="${0%/*}"
+LOG_FILE="$SCRIPT_PATH/multi_git_tool.log"
+printf -v DATE_TIME '%(%Y-%m-%d %H:%M:%S)T' -1 
+echo "$DATE_TIME - ran $PROGRAMNAME $*" >> "$LOG_FILE"
+
+
 function usage {    
     echo "multi_git_tool is a simple git tool to manage multiple repositories."
     echo "The tool operates on all subdierectories to a provided path or from the env variable GITREPOPATH."
     echo
-    echo "Usage: multi_git_tool.sh [-p] <path/to/repo> [-s] [-i] <repo_include_list> [-e] <repo_exclude_list> [-c] <command1> <command2> ..."
+    echo "Usage: multi_git_tool.sh [-p] <path/to/repo> [-s] [-i] <repo_include_list> [-e] <repo_exclude_list> [-y] [-c] <command1> <command2> ..."
     echo "  -p, --path          path to repo. if not provided will use GITREPOPATH variable"
     echo "  -s, --status        show a status summary in a table format"
     echo "  -i, --include       list of repos to include."
     echo "  -e, --exclude       list of repo names to exclude."
     echo "  -f, --file          path to a file that contains repo names to include."
-    echo "  -c, --command       set of git commands to run on all detected repos"
+    echo "  -c, --command       set of git commands to run on all detected repos."
+    echo "  -y, --yes           run commands without asking for user's approval."
     echo
     echo "commands shortcuts and combos:"
     echo "  s = status"
@@ -38,7 +45,9 @@ function command_mode {
     done      
     echo 
 
-    read -p "Press any key to continue"
+    if [ "$SKIP_USR_APPROVAL" == false ]; then
+        read -p "Press any key to continue"
+    fi
 
     ## For each git repo found, run all commands
     GIT_DIR_NUM=0
@@ -62,11 +71,11 @@ function command_mode {
 function status_mode {
     ## Create status table    
     TOTAL_DIR_ENTRY_LENGTH=35
-    TOTAL_BRANCH_ENTRY_LENGTH=10
+    TOTAL_BRANCH_ENTRY_LENGTH=30
     TOTAL_STATUS_ENTRY_LENGTH=35
     TOTAL_STAGED_ENTRY_LENGTH=5
     TOTAL_NOT_STAGED_ENTRY_LENGTH=7
-    TOTAL_LAST_COMMIT_ENTRY_LENGTH=19    
+    TOTAL_LAST_FETCH_ENTRY_LENGTH=14 
 
     temp="Repo Name"
     TOTAL_DIR_ENTRY_SPACES=$(printf " %.0s" $( seq $(($TOTAL_DIR_ENTRY_LENGTH - ${#temp} + 2)) ))
@@ -78,15 +87,16 @@ function status_mode {
     TOTAL_STAGED_ENTRY_SPACES=$(printf " %.0s" $( seq $(($TOTAL_STAGED_ENTRY_LENGTH - ${#temp} + 1)) ))
     temp="Unstaged"
     TOTAL_NOT_STAGED_ENTRY_SPACES=$(printf " %.0s" $( seq $(($TOTAL_NOT_STAGED_ENTRY_LENGTH - ${#temp} + 1)) ))
-    temp="Last Commit"
-    TOTAL_LAST_COMMIT_ENTRY_SPACES=$(printf " %.0s" $( seq $(($TOTAL_LAST_COMMIT_ENTRY_LENGTH - ${#temp} + 1)) ))
+    temp="Last Fetch"
+    TOTAL_LAST_FETCH_ENTRY_SPACES=$(printf " %.0s" $( seq $(($TOTAL_LAST_FETCH_ENTRY_LENGTH - ${#temp} + 1)) ))
     temp="$TOTAL_GIT_DIRS"
     DIR_NUM_FORMAT="%${#temp}d"
-    REPO_NUMSPACES=$(printf " %.0s" $( seq 0 $((3 + 2 * ${#temp} )) ))
+    REPO_NUMSPACES=$(printf " %.0s" $( seq 0 $((${#temp} )) ))
 
     ## table header
     echo
-    echo -e "\033[1;34m$REPO_NUMSPACES| Repo Name$TOTAL_DIR_ENTRY_SPACES| Branch$TOTAL_BRANCH_ENTRY_SPACES| Status$TOTAL_STATUS_ENTRY_SPACES| Staged$TOTAL_STAGED_ENTRY_SPACES| Unstaged$TOTAL_NOT_STAGED_ENTRY_SPACES| Last Commit$TOTAL_LAST_COMMIT_ENTRY_SPACES\033[0;0m"
+    # echo -e "\033[1;34m$REPO_NUMSPACES| Repo Name$TOTAL_DIR_ENTRY_SPACES| Branch$TOTAL_BRANCH_ENTRY_SPACES| Status$TOTAL_STATUS_ENTRY_SPACES| Staged$TOTAL_STAGED_ENTRY_SPACES| Unstaged$TOTAL_NOT_STAGED_ENTRY_SPACES| Last Commit$TOTAL_LAST_COMMIT_ENTRY_SPACES\033[0;0m"
+    echo -e "\033[1;34m$REPO_NUMSPACES| Repo Name$TOTAL_DIR_ENTRY_SPACES| Branch$TOTAL_BRANCH_ENTRY_SPACES| Status$TOTAL_STATUS_ENTRY_SPACES| Staged$TOTAL_STAGED_ENTRY_SPACES| Unstaged$TOTAL_NOT_STAGED_ENTRY_SPACES| Last Fetch$TOTAL_LAST_FETCH_ENTRY_SPACES\033[0;0m"
 
     ## For each git repo found, run git status and summarize info into a table format
     GIT_DIR_NUM=0
@@ -111,10 +121,9 @@ function status_mode {
         fi
         STAGED=$(echo "$STATUS" | grep 'Changes to be committed')
         NOT_STAGED=$(echo "$STATUS" | grep 'Changes not staged for commit')
-        LAST_COMMIT_DATE=''
+        LAST_FETCH_DATE=''
         if [ "$NEW_REPO" = false ]; then
-            LAST_COMMIT_DATE=$(git log -1 --date=format:'%Y-%m-%d %H:%M:%S'| head -n 4| grep 'Date:')
-            LAST_COMMIT_DATE=$(echo $LAST_COMMIT_DATE | cut -c 7-30)
+            LAST_FETCH_DATE=$(date +%Y%m%d-%H:%M -r .git/FETCH_HEAD)
         fi
 
         ## repo state. 0 - no changes in tracked files.
@@ -146,8 +155,8 @@ function status_mode {
         temp=$((${#NOT_STAGED_STATUS} > $TOTAL_NOT_STAGED_ENTRY_LENGTH  ? $TOTAL_NOT_STAGED_ENTRY_LENGTH : ${#NOT_STAGED_STATUS}))
         NOT_STAGED_STATUS=$(echo $NOT_STAGED_STATUS | cut -c 1-$temp)
         if [ "$NEW_REPO" = false ]; then
-            temp=$((${#LAST_COMMIT_DATE} > $TOTAL_LAST_COMMIT_ENTRY_LENGTH  ? $TOTAL_LAST_COMMIT_ENTRY_LENGTH : ${#LAST_COMMIT_DATE}))
-            LAST_COMMIT_DATE=$(echo $LAST_COMMIT_DATE | cut -c 1-$temp)
+            temp=$((${#LAST_FETCH_DATE} > $TOTAL_LAST_FETCH_ENTRY_LENGTH  ? $TOTAL_LAST_FETCH_ENTRY_LENGTH : ${#LAST_FETCH_DATE}))
+            LAST_FETCH_DATE=$(echo $LAST_FETCH_DATE | cut -c 1-$temp)
         fi
 
         ## repo status color. 
@@ -167,10 +176,11 @@ function status_mode {
         STATUS_SPACES=$(printf " %.0s" $(seq $(($TOTAL_STATUS_ENTRY_LENGTH - ${#UP_TO_DATE} + 1))))
         STAGED_SPACES=$(printf " %.0s" $(seq $(($TOTAL_STAGED_ENTRY_LENGTH - ${#STAGED_STATUS} + 2))))
         NOT_STAGED_SPACES=$(printf " %.0s" $(seq $(($TOTAL_NOT_STAGED_ENTRY_LENGTH - ${#NOT_STAGED_STATUS} + 2))))       
-        LAST_COMMIT_SPACES=$(printf " %.0s" $(seq $(($TOTAL_LAST_COMMIT_ENTRY_LENGTH - ${#LAST_COMMIT_DATE} + 2))))       
+        LAST_FETCH_SPACES=$(printf " %.0s" $(seq $(($TOTAL_LAST_FETCH_ENTRY_LENGTH - ${#LAST_FETCH_DATE} + 2))))       
 
         ## dispaly repo status line as a row in the table
-        echo -e "$STATUS_COLOR($(printf "$DIR_NUM_FORMAT" $GIT_DIR_NUM)/$TOTAL_GIT_DIRS) | $DIR_NAME$DIR_SPACES|$BRANCH$BRANCH_SPACES|$UP_TO_DATE$STATUS_SPACES| $STAGED_STATUS$STAGED_SPACES| $NOT_STAGED_STATUS$NOT_STAGED_SPACES| $LAST_COMMIT_DATE$LAST_COMMIT_SPACES\e[49;39m"                      
+        # echo -e "$STATUS_COLOR($(printf "$DIR_NUM_FORMAT" $GIT_DIR_NUM)/$TOTAL_GIT_DIRS) | $DIR_NAME$DIR_SPACES|$BRANCH$BRANCH_SPACES|$UP_TO_DATE$STATUS_SPACES| $STAGED_STATUS$STAGED_SPACES| $NOT_STAGED_STATUS$NOT_STAGED_SPACES| $LAST_COMMIT_DATE$LAST_COMMIT_SPACES\e[49;39m"                      
+        echo -e "$STATUS_COLOR$(printf "$DIR_NUM_FORMAT" $GIT_DIR_NUM) | $DIR_NAME$DIR_SPACES|$BRANCH$BRANCH_SPACES|$UP_TO_DATE$STATUS_SPACES| $STAGED_STATUS$STAGED_SPACES| $NOT_STAGED_STATUS$NOT_STAGED_SPACES| $LAST_FETCH_DATE$LAST_FETCH_SPACES\e[49;39m"                      
     done
 }
 
@@ -188,6 +198,7 @@ EXCLUDE_MODE=false
 INCLUDED_REPOS=()
 INCLUDE_MODE=false
 FILE_MODE=false
+SKIP_USR_APPROVAL=false
 while [[ $# -gt 0 ]] ; do
     key="$1"
 
@@ -226,6 +237,10 @@ while [[ $# -gt 0 ]] ; do
             FILE_PATH=("$2")
             shift # past argument
             shift # past value
+        ;;
+        -y|--yes)
+            SKIP_USR_APPROVAL=true
+            shift # past argument
         ;;
         *)    # unknown option
             case $1 in
@@ -321,22 +336,21 @@ if [ "$PROVIDED_REPO_PATH" != "" ] ; then
             fi
         done      
 
-         TOTAL_GIT_DIRS=${#DIRS[*]}
-         TOTAL_ALL_GIT_DIRS=$(echo "$ALL_DIRS" | wc -w)
-         if [ "$EXCLUDE_MODE" == true ] ||  [ "$INCLUDE_MODE" == true ]; then
-            echo -e "\033[1;33mFound $TOTAL_GIT_DIRS repositories out of $TOTAL_ALL_GIT_DIRS.\033[0;0m"
-         else
-            echo -e "\033[1;33mFound $TOTAL_GIT_DIRS repositories.\033[0;0m"
-         fi
-
-         if [ "$COMMAND_MODE" = true ]; then
-             command_mode
-             echo
-         fi
-         if [ "$STATUS_MODE" = true ]; then
-             status_mode
-             echo
-         fi
+        TOTAL_GIT_DIRS=${#DIRS[*]}
+        TOTAL_ALL_GIT_DIRS=$(echo "$ALL_DIRS" | wc -w)
+        if [ "$EXCLUDE_MODE" == true ] ||  [ "$INCLUDE_MODE" == true ]; then
+           echo -e "\033[1;33mFound $TOTAL_GIT_DIRS repositories out of $TOTAL_ALL_GIT_DIRS.\033[0;0m"
+        else
+           echo -e "\033[1;33mFound $TOTAL_GIT_DIRS repositories.\033[0;0m"
+        fi
+        if [ "$COMMAND_MODE" = true ]; then
+            command_mode
+            echo
+        fi
+        if [ "$STATUS_MODE" = true ]; then
+            status_mode
+            echo            
+        fi
     else
        echo "Git repositories not found."
     fi

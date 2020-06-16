@@ -11,14 +11,15 @@ The tool operates on all subdierectories of a provided path or from the env vari
 
 ## Usage
 ```
-multi_git_tool.sh [-p] <path/to/repo> [-s] [-i] <repo_include_list> [-e] <repo_exclude_list> [-f] <path/to/repo_list.txt> [-c] <command1> <command2> ...
+multi_git_tool.sh [-p] <path/to/repo> [-s] [-i] <repo_include_list> [-e] <repo_exclude_list> [-f] <path/to/repo_list.txt> [-y] [-c] <command1> <command2> ...
 ```
-*  -p, --path          path to repo. if not provided will use GITREPOPATH variable
-*  -s, --status        show a status summary in a table format
+*  -p, --path          path to repo. if not provided will use GITREPOPATH variable.
+*  -s, --status        show a status summary in a table format.
 *  -i, --include       list of repos to include.
 *  -e, --exclude       list of repo names to exclude.
 *  -f, --file          path to a file that contains repo names to include.
-*  -c, --command       set of git commands to run on all detected repos
+*  -c, --command       set of git commands to run on all detected repos.
+*  -y, --yes           run commands without asking for user's approval.
 
 command shortcuts:
 * s = status
