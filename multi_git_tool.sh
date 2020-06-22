@@ -55,7 +55,13 @@ function command_mode {
         GIT_DIR_NUM=$(($GIT_DIR_NUM+1))
         REPO_NAME=$(echo $DIR | rev | cut -d/ -f1 | rev)
         
-        cd $PROVIDED_REPO_PATH/$DIR  
+        if [ $DIR == ".git" ]; then
+            cd $PROVIDED_REPO_PATH
+            DIR=$(echo $PROVIDED_REPO_PATH | rev | cut -d/ -f1 | rev)
+        else
+            cd $PROVIDED_REPO_PATH/$DIR
+        fi
+
         CURRENT_COMMAND=1
         for GIT_COMMAND in "${GIT_COMMANDS[@]}"; do # access each element of array
             echo -e "\033[4;32m(repo $GIT_DIR_NUM/$TOTAL_GIT_DIRS) $DIR -> ($CURRENT_COMMAND/$TOTAL_COMMANDS) \033[1;32mgit $GIT_COMMAND\033[0;0m"
@@ -106,8 +112,13 @@ function status_mode {
     for DIR in "${DIRS[@]}" ; do            
         GIT_DIR_NUM=$(($GIT_DIR_NUM+1))   
         REPO_NAME=$(echo $DIR | rev | cut -d/ -f1 | rev)                
-        
-        cd $PROVIDED_REPO_PATH/$DIR
+
+        if [ $DIR == ".git" ]; then
+            cd $PROVIDED_REPO_PATH
+            DIR=$(echo $PROVIDED_REPO_PATH | rev | cut -d/ -f1 | rev)
+        else
+            cd $PROVIDED_REPO_PATH/$DIR
+        fi
 
         ## extract info from git status
         STATUS=$(git status)           
@@ -314,15 +325,15 @@ if [ "$PROVIDED_REPO_PATH" != "" ] ; then
     elif [ "$EXCLUDE_MODE" == true ]; then
         echo -e "\033[1;33mExcluding: \033[0;3;33m${EXCLUDED_REPOS[@]}\033[0;0m"
     fi
-
     ## list all dirs in path
-    ALL_DIRS=$(find $PROVIDED_REPO_PATH -name .git -type d -prune -printf "%P\n"| grep -v build | grep -Fxv .git| rev | cut -d/ -f2- | cut -d: -f2-| rev | sort)
+    # ALL_DIRS=$(find $PROVIDED_REPO_PATH -name .git -type d -prune -printf "%P\n"| grep -v build | grep -Fxv .git| rev | cut -d/ -f2- | cut -d: -f2-| rev | sort)
+    ALL_DIRS=$(find $PROVIDED_REPO_PATH -name .git -type d -prune -printf "%P\n"| grep -v build | rev | cut -d/ -f2- | cut -d: -f2-| rev | sort)
+
     DIRS=()
     if [ ! -z "$ALL_DIRS" ] ; then   
 
         for DIR in $ALL_DIRS ; do      
             REPO_NAME=$(echo $DIR | rev | cut -d/ -f1 | rev) 
-             
             if [ "$EXCLUDE_MODE" == true ]; then
                 if [[ ! " ${EXCLUDED_REPOS[@]} " == *" ${REPO_NAME} "* ]]; then     
                     DIRS+=("$DIR")                
