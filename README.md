@@ -8,6 +8,11 @@ The tool operates on all subdierectories of a provided path or from the env vari
 
 ![Multi Git Tool Demo](multi_git_tool.gif)
 
+## Install
+
+```console
+sudo -E wget https://raw.githubusercontent.com/borisindelman/multi_git_tool/master/multi_git_tool.sh -P /usr/local/bin && sudo chmod 755 /usr/local/bin/multi_git_tool.sh
+```
 
 ## Usage
 ```
