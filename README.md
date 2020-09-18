@@ -11,15 +11,15 @@ The tool operates on all subdierectories of a provided path or from the env vari
 ## Install
 
 ```console
-sudo -E wget https://raw.githubusercontent.com/borisindelman/multi_git_tool/master/multi_git_tool.sh -P /usr/local/bin && sudo chmod 755 /usr/local/bin/multi_git_tool.sh
+sudo -E wget https://raw.githubusercontent.com/borisindelman/multi_git_tool/master/multi_git_tool.sh -O /usr/local/bin/multi_git_tool && sudo chmod 755 /usr/local/bin/multi_git_tool
 ```
 
 ## Usage
 
 ```console
 multi_git_tool.sh [-p] <path/to/repo> [-s] [-i] <repo_include_list> [-e] <repo_exclude_list> [-f] <path/to/repo_list.txt> [-y] [-c] <command1> <command2> ...
+```
 
-```console
 *  -p, --path          path to repo. if not provided will use GITREPOPATH variable.
 *  -s, --status        show a status summary in a table format.
 *  -i, --include       list of repos to include.
