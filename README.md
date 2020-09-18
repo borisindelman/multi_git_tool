@@ -8,11 +8,18 @@ The tool operates on all subdierectories of a provided path or from the env vari
 
 ![Multi Git Tool Demo](multi_git_tool.gif)
 
+## Install
+
+```console
+sudo -E wget https://raw.githubusercontent.com/borisindelman/multi_git_tool/master/multi_git_tool.sh -O /usr/local/bin/multi_git_tool && sudo chmod 755 /usr/local/bin/multi_git_tool
+```
 
 ## Usage
-```
+
+```console
 multi_git_tool.sh [-p] <path/to/repo> [-s] [-i] <repo_include_list> [-e] <repo_exclude_list> [-f] <path/to/repo_list.txt> [-y] [-c] <command1> <command2> ...
 ```
+
 *  -p, --path          path to repo. if not provided will use GITREPOPATH variable.
 *  -s, --status        show a status summary in a table format.
 *  -i, --include       list of repos to include.
@@ -31,38 +38,55 @@ command shortcuts:
 ## Examples
 
 * Status table for all repos
-    ```bash
+
+    ```console
     multi_git_tool -p /path/to/repo -s
     ```
+
 * `git status` for each repo
-    ```bash
+
+    ```console
     multi_git_tool -p /path/to/repo -c status
     ```
+
 * `git pull` for each repo
-    ```bash
-    multi_git_tool -p /path/to/repo -c pull 
+
+    ```console
+    multi_git_tool -p /path/to/repo -c pull
     ```
+
 * `git checkout msater` and then `git pull` and them show status table
-    ```bash
+
+    ```console
     multi_git_tool -p /path/to/repo -s -c 'checkout master' pull
     ```
+
 * `git reset --hard` & `git checkout master` & `git pull` & show status table
-    ```bash
+
+    ```console
     multi_git_tool -p /path/to/repo -s -c rcp
     ```
+
 * `git pull` for each repo except repo_b
-    ```bash
+
+    ```console
     multi_git_tool -p /path/to/repo -e repo_b -c pull
     ```
+
 * `git pull` for each repo except repo_b and repo_c
-    ```bash
+
+    ```console
     multi_git_tool -p /path/to/repo -e 'repo_b repo_c' -c pull
     ```
+
 * `git pull` for only repos repo_b and repo_c
-    ```bash
+
+    ```console
     multi_git_tool -p /path/to/repo -i 'repo_b repo_c' -c pull
     ```
+
 * `git pull` for a repo list provided in a file
-    ```bash
+
+    ```console
     multi_git_tool -p /path/to/repo -f /path/to/repo_list.txt -c pull
     ```
